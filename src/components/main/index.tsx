@@ -73,9 +73,11 @@ export default function Main() {
               Your AI trading assistant is ready
             </p>
           </div>
-          <Button variant="outline" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <Link to="/settings">
+            <Button variant="outline" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
 
         {/* Quick Actions Grid */}
@@ -178,18 +180,26 @@ export default function Main() {
 
         {/* Quick Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button variant="outline" className="w-full justify-start gap-2">
-            <BookOpen className="h-4 w-4" /> Documentation
-          </Button>
-          <Button variant="outline" className="w-full justify-start gap-2">
-            <GraduationCap className="h-4 w-4" /> Tutorials
-          </Button>
-          <Button variant="outline" className="w-full justify-start gap-2">
-            <Sparkles className="h-4 w-4" /> Premium Features
-          </Button>
-          <Button variant="outline" className="w-full justify-start gap-2">
-            <Settings className="h-4 w-4" /> Settings
-          </Button>
+          <Link to="/documentation">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              <BookOpen className="h-4 w-4" /> Documentation
+            </Button>
+          </Link>
+          <Link to="/learn">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              <GraduationCap className="h-4 w-4" /> Tutorials
+            </Button>
+          </Link>
+          <Link to="/premium">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              <Sparkles className="h-4 w-4" /> Premium Features
+            </Button>
+          </Link>
+          <Link to="/settings">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              <Settings className="h-4 w-4" /> Settings
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

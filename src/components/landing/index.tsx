@@ -23,7 +23,7 @@ export default function Landing() {
               high-confidence trading signals.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link to="/home">
+              <Link to="/auth">
                 <Button size="lg" className="gap-2">
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>

@@ -1,105 +1,41 @@
-import React, { useEffect, useRef } from "react";
-
-interface Point {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-}
+import React from "react";
 
 export function GeometricBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let animationFrameId: number;
-    let points: Point[] = [];
-    const numberOfPoints = 50;
-    const connectionRadius = 150;
-    const pointRadius = 2;
-
-    // Resize handler
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      initPoints();
-    };
-
-    // Initialize points
-    const initPoints = () => {
-      points = [];
-      for (let i = 0; i < numberOfPoints; i++) {
-        points.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-        });
-      }
-    };
-
-    // Animation loop
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Update points
-      points.forEach((point) => {
-        point.x += point.vx;
-        point.y += point.vy;
-
-        // Bounce off walls
-        if (point.x < 0 || point.x > canvas.width) point.vx *= -1;
-        if (point.y < 0 || point.y > canvas.height) point.vy *= -1;
-
-        // Draw point
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, pointRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(var(--primary), 0.5)";
-        ctx.fill();
-      });
-
-      // Draw connections
-      points.forEach((point, i) => {
-        points.slice(i + 1).forEach((otherPoint) => {
-          const dx = point.x - otherPoint.x;
-          const dy = point.y - otherPoint.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < connectionRadius) {
-            ctx.beginPath();
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(otherPoint.x, otherPoint.y);
-            ctx.strokeStyle = `rgba(var(--primary), ${1 - distance / connectionRadius})`;
-            ctx.stroke();
-          }
-        });
-      });
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    // Set up
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    animate();
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 -z-10 bg-background"
-      style={{ filter: "blur(1px)" }}
-    />
+    <div className="absolute inset-0 -z-10 overflow-hidden">
+      <svg
+        className="absolute left-[max(50%,25rem)] top-0 h-[64rem] w-[128rem] -translate-x-1/2 stroke-gray-200 [mask-image:radial-gradient(64rem_64rem_at_top,white,transparent)] dark:stroke-gray-600/20"
+        aria-hidden="true"
+      >
+        <defs>
+          <pattern
+            id="e813992c-7d03-4cc4-a2bd-151760b470a0"
+            width="200"
+            height="200"
+            x="50%"
+            y="-1"
+            patternUnits="userSpaceOnUse"
+          >
+            <path d="M100 200V.5M.5 .5H200" fill="none" />
+          </pattern>
+        </defs>
+        <svg
+          x="50%"
+          y="-1"
+          className="overflow-visible fill-gray-50 dark:fill-gray-900/50"
+        >
+          <path
+            d="M-100.5 0h201v201h-201Z M699.5 0h201v201h-201Z M499.5 400h201v201h-201Z M-300.5 600h201v201h-201Z"
+            strokeWidth="0"
+          />
+        </svg>
+        <rect
+          width="100%"
+          height="100%"
+          strokeWidth="0"
+          fill="url(#e813992c-7d03-4cc4-a2bd-151760b470a0)"
+        />
+      </svg>
+    </div>
   );
 }

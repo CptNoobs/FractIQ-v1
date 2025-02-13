@@ -47,6 +47,28 @@
     --input: 240 3.7% 15.9%;
     --ring: 142.4 71.8% 29.2%;
   }
+
+  .matrix {
+    --background: 120 100% 2%;
+    --foreground: 120 100% 86%;
+    --card: 120 100% 5%;
+    --card-foreground: 120 100% 86%;
+    --popover: 120 100% 2%;
+    --popover-foreground: 120 100% 86%;
+    --primary: 120 100% 50%;
+    --primary-foreground: 120 100% 10%;
+    --secondary: 120 50% 15%;
+    --secondary-foreground: 120 100% 86%;
+    --muted: 120 50% 15%;
+    --muted-foreground: 120 100% 70%;
+    --accent: 120 50% 15%;
+    --accent-foreground: 120 100% 86%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 120 100% 86%;
+    --border: 120 50% 15%;
+    --input: 120 50% 15%;
+    --ring: 120 100% 50%;
+  }
 }
 
 @layer base {

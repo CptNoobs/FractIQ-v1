@@ -3,6 +3,7 @@ import MarketAnalysisPanel from "./dashboard/MarketAnalysisPanel";
 import SignalPanel from "./dashboard/SignalPanel";
 import RiskManagementPanel from "./dashboard/RiskManagementPanel";
 import WatchlistPanel from "./dashboard/WatchlistPanel";
+
 import SummaryPanel from "./dashboard/SummaryPanel";
 
 interface HomeProps {

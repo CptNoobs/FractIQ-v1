@@ -1,135 +1,206 @@
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Loading } from "@/components/ui/loading";
 import {
-  ArrowUpCircle,
-  ArrowDownCircle,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Search,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Waves,
   Brain,
-  Clock,
   Target,
-  Zap,
 } from "lucide-react";
-import MarketAnalysisPanel from "../dashboard/MarketAnalysisPanel";
-import RiskManagementPanel from "../dashboard/RiskManagementPanel";
-import SignalPanel from "../dashboard/SignalPanel";
+import { WaveChart } from "@/components/ui/wave-chart";
+import { TradingViewChart } from "./TradingViewChart";
+import { WaveAnalysisPanel } from "./WaveAnalysisPanel";
+import { ChartControls } from "./ChartControls";
+import { marketData } from "@/lib/market-data";
+import { notifications } from "@/lib/notifications";
+import { basicWaveDetector } from "@/lib/wave-analysis/basic-wave-detector";
+
+interface MarketInfo {
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
+  openInterest?: number;
+  fundingRate?: number;
+}
 
 export default function Analysis() {
-  return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with Symbol Search */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">BTC/USD Analysis</h1>
-            <p className="text-muted-foreground">
-              Detailed market analysis and signals
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Input placeholder="Search symbol..." className="w-[200px]" />
-            <Button>Analyze</Button>
-          </div>
-        </div>
+  const [chartType, setChartType] = useState<"candlestick" | "line" | "area">(
+    "candlestick",
+  );
+  const [showVolume, setShowVolume] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showAI, setShowAI] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [symbol, setSymbol] = useState("BTCUSDT");
+  const [marketInfo, setMarketInfo] = useState<MarketInfo>({
+    symbol: "BTCUSDT",
+    price: 0,
+    change24h: 0,
+    volume24h: 0,
+    high24h: 0,
+    low24h: 0,
+  });
+  const [wavePattern, setWavePattern] = useState<any>(null);
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Last Update</p>
-                <p className="font-medium">2 minutes ago</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">AI Confidence</p>
-                <p className="font-medium">92%</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Current Wave</p>
-                <p className="font-medium">Wave 3 of 5</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Signal Strength</p>
-                <p className="font-medium">Strong Buy</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+  const handleMarketData = useCallback((data: any) => {
+    setMarketInfo((prev) => ({
+      ...prev,
+      price: data.price,
+      change24h: data.priceChangePercent,
+      volume24h: data.volume,
+      high24h: data.high,
+      low24h: data.low,
+    }));
+  }, []);
 
-        {/* Main Analysis Content */}
-        <Tabs defaultValue="technical" className="w-full">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="technical">Technical Analysis</TabsTrigger>
-            <TabsTrigger value="wave">Wave Analysis</TabsTrigger>
-            <TabsTrigger value="signals">Trading Signals</TabsTrigger>
-            <TabsTrigger value="ai">AI Insights</TabsTrigger>
-          </TabsList>
+  const handleSymbolChange = (newSymbol: string) => {
+    if (!newSymbol || newSymbol === symbol) return;
+    setSymbol(newSymbol.toUpperCase());
+  };
 
-          <TabsContent value="technical" className="space-y-6">
-            <MarketAnalysisPanel />
-          </TabsContent>
+  const updateWavePattern = async () => {
+    try {
+      const pattern = await basicWaveDetector.detectWavePattern(symbol);
+      setWavePattern(pattern);
 
-          <TabsContent value="wave" className="space-y-6">
-            <MarketAnalysisPanel />
-          </TabsContent>
+      if (pattern.confidence > 80) {
+        notifications.notifyPatternDetected(
+          `Wave ${pattern.currentWave}${pattern.subWave}`,
+          symbol,
+          pattern.confidence,
+        );
+      }
+    } catch (error) {
+      console.error("Wave pattern detection error:", error);
+    }
+  };
 
-          <TabsContent value="signals" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SignalPanel />
-              <RiskManagementPanel />
-            </div>
-          </TabsContent>
+  useEffect(() => {
+    marketData.enable();
+    marketData.subscribe(symbol, handleMarketData);
+    updateWavePattern();
 
-          <TabsContent value="ai" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-4">
-                AI Analysis Summary
-              </h3>
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="h-5 w-5 text-primary" />
-                    <h4 className="font-medium">Pattern Recognition</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    AI has detected a strong Wave 3 formation with 92%
-                    confidence. Historical pattern matching suggests continued
-                    upward momentum.
-                  </p>
-                </div>
+    const interval = setInterval(updateWavePattern, 60000); // Update every minute
 
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    <h4 className="font-medium">Entry/Exit Points</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Optimal entry point detected at $44,250 with initial target
-                    at $47,000. Stop loss recommended at $43,500.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    return () => {
+      marketData.unsubscribe(symbol, handleMarketData);
+      clearInterval(interval);
+    };
+  }, [symbol, handleMarketData]);
+
+  if (error) {
+    return (
+      <div className="p-4 text-destructive">
+        <p>{error}</p>
       </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loading className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen bg-background flex flex-col">
+      <div className="h-16 border-b bg-card px-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative w-[180px]">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search symbol..."
+              value={symbol}
+              onChange={(e) => handleSymbolChange(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={marketInfo.change24h >= 0 ? "default" : "destructive"}
+              className="text-xs"
+            >
+              {marketInfo.change24h >= 0 ? "+" : ""}
+              {marketInfo.change24h.toFixed(2)}%
+            </Badge>
+            <span className="text-lg font-mono">
+              ${marketInfo.price.toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <ChartControls
+          chartType={chartType}
+          showVolume={showVolume}
+          showGrid={showGrid}
+          showAI={showAI}
+          onChartTypeChange={setChartType}
+          onToggleVolume={() => setShowVolume(!showVolume)}
+          onToggleGrid={() => setShowGrid(!showGrid)}
+          onToggleAI={() => setShowAI(!showAI)}
+          onSave={() => {}}
+          onShare={() => {}}
+          onMaximize={() => {}}
+        />
+      </div>
+
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+          <div className="h-full p-4 space-y-4 bg-card">
+            <Card className="p-4">
+              <Tabs defaultValue="technical">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="technical">Technical</TabsTrigger>
+                  <TabsTrigger value="wave">Wave</TabsTrigger>
+                </TabsList>
+
+                <ScrollArea className="h-[calc(100vh-280px)] mt-4">
+                  <TabsContent value="technical" className="space-y-4">
+                    {/* Technical Analysis Content */}
+                  </TabsContent>
+
+                  <TabsContent value="wave" className="space-y-4">
+                    {wavePattern && <WaveAnalysisPanel data={wavePattern} />}
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
+            </Card>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        <ResizablePanel defaultSize={80}>
+          <div className="h-full bg-card">
+            <TradingViewChart
+              symbol={symbol}
+              chartType={chartType}
+              showVolume={showVolume}
+              showGrid={showGrid}
+              showAI={showAI}
+            />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }

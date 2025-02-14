@@ -9,9 +9,23 @@ import {
   TrendingDown,
 } from "lucide-react";
 
-const insights = [
+import { useState, useEffect } from "react";
+import { marketData } from "@/lib/market-data";
+
+interface MarketInsight {
+  pair: string;
+  confidence: number;
+  direction: "up" | "down";
+  wave: number;
+  pattern: string;
+  prediction: string;
+  price?: number;
+  change?: number;
+}
+
+const defaultInsights: MarketInsight[] = [
   {
-    pair: "BTC/USD",
+    pair: "BTCUSDT",
     confidence: 92,
     direction: "up",
     wave: 3,
@@ -19,7 +33,7 @@ const insights = [
     prediction: "Strong continuation likely",
   },
   {
-    pair: "ETH/USD",
+    pair: "ETHUSDT",
     confidence: 85,
     direction: "down",
     wave: 4,
@@ -28,7 +42,85 @@ const insights = [
   },
 ];
 
+interface InsightCard {
+  title: string;
+  description: string;
+  confidence: number;
+  action?: string;
+  onAction?: () => void;
+  type: "pattern" | "signal" | "risk" | "market";
+}
+
+function InsightCard({
+  title,
+  description,
+  confidence,
+  action,
+  onAction,
+  type,
+}: InsightCard) {
+  return (
+    <Card className="p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {type === "pattern" && <Waves className="h-5 w-5 text-primary" />}
+          {type === "signal" && <Target className="h-5 w-5 text-primary" />}
+          {type === "risk" && (
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          )}
+          {type === "market" && <LineChart className="h-5 w-5 text-blue-500" />}
+          <h3 className="font-semibold">{title}</h3>
+        </div>
+        <Badge variant={confidence > 80 ? "default" : "secondary"}>
+          {confidence}% Confidence
+        </Badge>
+      </div>
+      <p className="text-muted-foreground mb-4">{description}</p>
+      {action && (
+        <Button onClick={onAction} variant="outline" className="w-full">
+          {action}
+        </Button>
+      )}
+    </Card>
+  );
+}
+
 export default function Insights() {
+  const [insights, setInsights] = useState<MarketInsight[]>(defaultInsights);
+
+  useEffect(() => {
+    const handlers = new Map();
+
+    insights.forEach((insight) => {
+      const handler = (data: any) => {
+        setInsights((prev) =>
+          prev.map((item) => {
+            if (item.pair === data.symbol) {
+              return {
+                ...item,
+                price: data.price,
+                change: data.priceChangePercent,
+                direction: data.priceChangePercent >= 0 ? "up" : "down",
+              };
+            }
+            return item;
+          }),
+        );
+      };
+
+      handlers.set(insight.pair, handler);
+      marketData.subscribe(insight.pair, handler);
+    });
+
+    return () => {
+      insights.forEach((insight) => {
+        const handler = handlers.get(insight.pair);
+        if (handler) {
+          marketData.unsubscribe(insight.pair, handler);
+        }
+      });
+    };
+  }, []);
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -70,7 +162,14 @@ export default function Insights() {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{insight.confidence}%</div>
+                      <div>
+                        <div className="font-medium">
+                          ${insight.price?.toLocaleString() || "--"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {insight.confidence}% confidence
+                        </div>
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         Confidence
                       </div>

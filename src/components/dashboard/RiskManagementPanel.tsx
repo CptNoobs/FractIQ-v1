@@ -40,11 +40,11 @@ const defaultParameters: RiskParameters = {
   confidence: 85,
 };
 
-const RiskManagementPanel = ({
+export function RiskManagementPanel({
   parameters = defaultParameters,
   currentPrice = 135.25,
   direction = "long",
-}: RiskManagementPanelProps) => {
+}: RiskManagementPanelProps) {
   return (
     <Card className="p-6 bg-background w-full h-[300px]">
       <div className="flex justify-between items-center mb-4">
@@ -130,6 +130,4 @@ const RiskManagementPanel = ({
       </div>
     </Card>
   );
-};
-
-export default RiskManagementPanel;
+}

@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Star, TrendingUp, TrendingDown } from "lucide-react";
+import { marketData } from "@/lib/market-data";
 
 interface WatchlistItem {
   symbol: string;
@@ -16,17 +18,47 @@ interface WatchlistPanelProps {
   items?: WatchlistItem[];
 }
 
-const defaultItems: WatchlistItem[] = [
-  { symbol: "BTC/USD", price: 45250.75, change: 2.5, wave: 3, confidence: 85 },
-  { symbol: "ETH/USD", price: 2250.5, change: -1.2, wave: 2, confidence: 75 },
-  { symbol: "XRP/USD", price: 0.55, change: 1.8, wave: 4, confidence: 65 },
-  { symbol: "SOL/USD", price: 125.75, change: 5.2, wave: 1, confidence: 90 },
-  { symbol: "ADA/USD", price: 0.85, change: -0.5, wave: 5, confidence: 70 },
+const defaultItems = [
+  { symbol: "BTCUSDT", wave: 3, confidence: 85 },
+  { symbol: "ETHUSDT", wave: 2, confidence: 75 },
+  { symbol: "BNBUSDT", wave: 4, confidence: 65 },
+  { symbol: "SOLUSDT", wave: 1, confidence: 90 },
+  { symbol: "ADAUSDT", wave: 5, confidence: 70 },
 ];
 
-export default function WatchlistPanel({
-  items = defaultItems,
-}: WatchlistPanelProps) {
+export default function WatchlistPanel() {
+  const [items, setItems] = useState<WatchlistItem[]>(defaultItems);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [liveData, setLiveData] = useState<
+    Record<string, { price: number; change: number }>
+  >({});
+  useEffect(() => {
+    const handleMarketData = (data: any) => {
+      setLiveData((prev) => ({
+        ...prev,
+        [data.symbol]: {
+          price: data.price,
+          change: data.priceChangePercent,
+        },
+      }));
+    };
+
+    // Subscribe to market data for each symbol
+    items.forEach((item) => {
+      marketData.subscribe(item.symbol, handleMarketData);
+    });
+
+    return () => {
+      items.forEach((item) => {
+        marketData.unsubscribe(item.symbol, handleMarketData);
+      });
+    };
+  }, [items]);
+
+  const filteredItems = items.filter((item) =>
+    item.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   return (
     <Card className="p-4 bg-background">
       <div className="flex items-center justify-between mb-4">
@@ -36,13 +68,18 @@ export default function WatchlistPanel({
         </div>
         <div className="relative w-[200px]">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search symbols..." className="pl-8" />
+          <Input
+            placeholder="Search symbols..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-2">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <div
               key={item.symbol}
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer"
@@ -54,19 +91,23 @@ export default function WatchlistPanel({
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-mono">${item.price.toLocaleString()}</div>
+                <div className="font-mono">
+                  ${liveData[item.symbol]?.price?.toLocaleString() || "--"}
+                </div>
                 <div className="flex items-center gap-1">
-                  {item.change >= 0 ? (
+                  {(liveData[item.symbol]?.change || 0) >= 0 ? (
                     <TrendingUp className="h-3 w-3 text-green-500" />
                   ) : (
                     <TrendingDown className="h-3 w-3 text-red-500" />
                   )}
                   <span
                     className={
-                      item.change >= 0 ? "text-green-500" : "text-red-500"
+                      (liveData[item.symbol]?.change || 0) >= 0
+                        ? "text-green-500"
+                        : "text-red-500"
                     }
                   >
-                    {Math.abs(item.change)}%
+                    {Math.abs(liveData[item.symbol]?.change || 0).toFixed(2)}%
                   </span>
                 </div>
               </div>

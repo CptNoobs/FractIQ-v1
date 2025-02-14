@@ -42,6 +42,49 @@ const defaultInsights: MarketInsight[] = [
   },
 ];
 
+interface InsightCard {
+  title: string;
+  description: string;
+  confidence: number;
+  action?: string;
+  onAction?: () => void;
+  type: "pattern" | "signal" | "risk" | "market";
+}
+
+function InsightCard({
+  title,
+  description,
+  confidence,
+  action,
+  onAction,
+  type,
+}: InsightCard) {
+  return (
+    <Card className="p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {type === "pattern" && <Waves className="h-5 w-5 text-primary" />}
+          {type === "signal" && <Target className="h-5 w-5 text-primary" />}
+          {type === "risk" && (
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          )}
+          {type === "market" && <LineChart className="h-5 w-5 text-blue-500" />}
+          <h3 className="font-semibold">{title}</h3>
+        </div>
+        <Badge variant={confidence > 80 ? "default" : "secondary"}>
+          {confidence}% Confidence
+        </Badge>
+      </div>
+      <p className="text-muted-foreground mb-4">{description}</p>
+      {action && (
+        <Button onClick={onAction} variant="outline" className="w-full">
+          {action}
+        </Button>
+      )}
+    </Card>
+  );
+}
+
 export default function Insights() {
   const [insights, setInsights] = useState<MarketInsight[]>(defaultInsights);
 

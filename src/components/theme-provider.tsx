@@ -1,8 +1,6 @@
-"use client";
-
 import * as React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Theme } from "@/types/theme";
+import type { Theme } from "@/types/theme";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -34,6 +32,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
+
     const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
       .matches
       ? "dark"

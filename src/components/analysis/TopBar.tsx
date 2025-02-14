@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Brain,
   TrendingUp,
@@ -7,6 +8,8 @@ import {
   Waves,
   DollarSign,
   Clock,
+  Target,
+  AlertTriangle,
 } from "lucide-react";
 
 interface TopBarProps {
@@ -20,21 +23,30 @@ interface TopBarProps {
     openInterest?: number;
     fundingRate?: number;
     marketCap?: number;
-    wave: {
-      current: number;
-      confidence: number;
+  };
+  wavePattern?: {
+    current: number;
+    confidence: number;
+    pattern: string;
+    direction: "up" | "down";
+    targets: Array<{
+      price: number;
+      probability: number;
+      wave: number;
+    }>;
+    nextPrediction?: {
       pattern: string;
-    };
-    signal: {
-      type: string;
-      strength: number;
+      confidence: number;
+      timeframe: string;
     };
   };
 }
 
-export function TopBar({ data }: TopBarProps) {
+export function TopBar({ data, wavePattern }: TopBarProps) {
+  const nextTarget = wavePattern?.targets?.[0] || { price: 0, probability: 0 };
+
   return (
-    <div className="h-12 border-b bg-card grid grid-cols-6 divide-x">
+    <div className="h-16 border-b bg-card grid grid-cols-7 divide-x">
       {/* Price Info */}
       <div className="flex items-center justify-between px-4">
         <div>
@@ -112,32 +124,52 @@ export function TopBar({ data }: TopBarProps) {
         <div className="flex items-center gap-2">
           <Waves className="h-4 w-4 text-primary" />
           <div>
-            <div className="text-sm font-medium">Wave {data.wave.current}</div>
+            <div className="text-sm font-medium">
+              Wave {wavePattern?.current || "-"}
+            </div>
             <div className="text-xs text-muted-foreground">
-              {data.wave.pattern}
+              {wavePattern?.pattern || "Analyzing..."}
             </div>
           </div>
         </div>
         <Badge variant="outline" className="text-xs">
-          {data.wave.confidence}%
+          {wavePattern?.confidence || 0}%
         </Badge>
       </div>
 
-      {/* AI Signal */}
+      {/* Pattern Info */}
       <div className="px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-primary" />
           <div>
-            <div className="text-sm font-medium">{data.signal.type}</div>
-            <div className="text-xs text-muted-foreground">AI Signal</div>
+            <div className="text-sm font-medium">
+              {wavePattern?.direction === "up" ? (
+                <TrendingUp className="h-3 w-3 inline text-green-500 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 inline text-red-500 mr-1" />
+              )}
+              {wavePattern?.nextPrediction?.pattern || "Analyzing..."}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {wavePattern?.nextPrediction?.timeframe || "4H"} Prediction
+            </div>
           </div>
         </div>
-        <Badge
-          variant={data.signal.type === "BUY" ? "default" : "destructive"}
-          className="text-xs"
-        >
-          {data.signal.strength}/10
-        </Badge>
+      </div>
+
+      {/* Next Target */}
+      <div className="px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-primary" />
+          <div>
+            <div className="text-sm font-medium">
+              ${nextTarget.price.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Next Target ({nextTarget.probability}%)
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

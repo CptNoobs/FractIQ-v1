@@ -1,133 +1,149 @@
-import { BehaviorSubject } from "rxjs";
+import { binanceStream } from "./binance-stream";
+import type {
+  MarketUpdate,
+  HistoricalData,
+  MarketDataService as IMarketDataService,
+} from "./types";
+import { fetchKlines } from "../binance-api";
 
-interface MarketState {
-  price: number;
-  volume: number;
-  change24h: number;
-  high24h: number;
-  low24h: number;
-  lastUpdate: number;
-}
-
-class MarketDataService {
-  private state = new Map<string, BehaviorSubject<MarketState>>();
-  private ws: WebSocket | null = null;
-  private reconnectTimer: number | null = null;
-  private isConnected = false;
-
-  constructor() {
-    this.initializeWebSocket();
-  }
-
-  private initializeWebSocket() {
-    try {
-      this.ws = new WebSocket("wss://stream.binance.com:9443/ws");
-
-      this.ws.onopen = () => {
-        this.isConnected = true;
-        this.subscribeToSymbols();
-      };
-
-      this.ws.onclose = () => {
-        this.isConnected = false;
-        this.reconnect();
-      };
-
-      this.ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        this.reconnect();
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.handleMessage(data);
-        } catch (error) {
-          console.error("Error parsing message:", error);
-        }
-      };
-    } catch (error) {
-      console.error("Error initializing WebSocket:", error);
-      this.reconnect();
+class MarketDataService implements IMarketDataService {
+  private enabled = false;
+  private cache = new Map<string, MarketUpdate>();
+  private historicalCache = new Map<
+    string,
+    {
+      data: HistoricalData[];
+      timestamp: number;
     }
+  >();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  enable() {
+    this.enabled = true;
   }
 
-  private reconnect() {
-    if (this.reconnectTimer) return;
-
-    this.reconnectTimer = window.setTimeout(() => {
-      this.initializeWebSocket();
-      this.reconnectTimer = null;
-    }, 5000);
+  disable() {
+    this.enabled = false;
+    binanceStream.cleanup();
+    this.cache.clear();
+    this.historicalCache.clear();
   }
 
-  private handleMessage(data: any) {
-    if (!data.s || !data.c) return;
+  subscribe(symbol: string, handler: (data: MarketUpdate) => void) {
+    if (!symbol || typeof symbol !== "string") return;
+    if (!this.enabled) return;
 
-    const symbol = data.s;
-    const subject = this.getSubject(symbol);
+    const upperSymbol = symbol.toUpperCase();
 
-    subject.next({
-      price: parseFloat(data.c),
-      volume: parseFloat(data.v),
-      change24h: parseFloat(data.p),
-      high24h: parseFloat(data.h),
-      low24h: parseFloat(data.l),
-      lastUpdate: Date.now(),
+    // Send cached data immediately if available
+    const cached = this.cache.get(upperSymbol);
+    if (cached) {
+      handler(cached);
+    }
+
+    // Subscribe to real-time updates
+    binanceStream.subscribe(upperSymbol, (data) => {
+      this.cache.set(upperSymbol, data);
+      handler(data);
     });
   }
 
-  private getSubject(symbol: string) {
-    if (!this.state.has(symbol)) {
-      this.state.set(
-        symbol,
-        new BehaviorSubject<MarketState>({
-          price: 0,
-          volume: 0,
-          change24h: 0,
-          high24h: 0,
-          low24h: 0,
-          lastUpdate: 0,
-        }),
-      );
-    }
-    return this.state.get(symbol)!;
+  unsubscribe(symbol: string, handler: (data: MarketUpdate) => void) {
+    if (!symbol) return;
+    binanceStream.unsubscribe(symbol.toUpperCase(), handler);
   }
 
-  private subscribeToSymbols() {
-    if (!this.ws || !this.isConnected) return;
+  async getHistoricalData(
+    symbol: string,
+    timeframe: string,
+    limit: number = 1000,
+  ): Promise<HistoricalData[]> {
+    const cacheKey = `${symbol}-${timeframe}-${limit}`;
+    const cached = this.historicalCache.get(cacheKey);
 
-    const symbols = Array.from(this.state.keys());
-    if (symbols.length === 0) return;
-
-    const subscribeMsg = {
-      method: "SUBSCRIBE",
-      params: symbols.map((s) => `${s.toLowerCase()}@ticker`),
-      id: Date.now(),
-    };
-
-    this.ws.send(JSON.stringify(subscribeMsg));
-  }
-
-  subscribe(symbol: string, callback: (data: MarketState) => void) {
-    const subject = this.getSubject(symbol);
-    const subscription = subject.subscribe(callback);
-
-    if (this.isConnected) {
-      this.subscribeToSymbols();
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data;
     }
 
-    return () => subscription.unsubscribe();
+    try {
+      const data = await fetchKlines(symbol, timeframe, limit);
+      this.historicalCache.set(cacheKey, {
+        data,
+        timestamp: Date.now(),
+      });
+      return data;
+    } catch (error) {
+      console.error(`Failed to fetch historical data for ${symbol}:`, error);
+      throw error;
+    }
+  }
+
+  getPrice(symbol: string): number | null {
+    return this.cache.get(symbol.toUpperCase())?.price || null;
   }
 
   cleanup() {
-    if (this.ws) {
-      this.ws.close();
+    this.disable();
+  }
+}
+
+export const marketData = new MarketDataService();
+
+interface MarketUpdate {
+  symbol: string;
+  price: number;
+  volume: number;
+  priceChange: number;
+  priceChangePercent: number;
+  high: number;
+  low: number;
+  timestamp: number;
+}
+
+class MarketDataService {
+  private enabled = false;
+  private cache = new Map<string, MarketUpdate>();
+
+  enable() {
+    this.enabled = true;
+  }
+
+  disable() {
+    this.enabled = false;
+    binanceStream.cleanup();
+    this.cache.clear();
+  }
+
+  subscribe(symbol: string, handler: MarketDataHandler) {
+    if (!symbol || typeof symbol !== "string") return;
+    if (!this.enabled) return;
+
+    const upperSymbol = symbol.toUpperCase();
+
+    // Send cached data immediately if available
+    const cached = this.cache.get(upperSymbol);
+    if (cached) {
+      handler(cached);
     }
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-    }
-    this.state.clear();
+
+    // Subscribe to real-time updates
+    binanceStream.subscribe(upperSymbol, (data) => {
+      this.cache.set(upperSymbol, data);
+      handler(data);
+    });
+  }
+
+  unsubscribe(symbol: string, handler: MarketDataHandler) {
+    if (!symbol) return;
+    binanceStream.unsubscribe(symbol.toUpperCase(), handler);
+  }
+
+  getPrice(symbol: string): number | null {
+    return this.cache.get(symbol.toUpperCase())?.price || null;
+  }
+
+  cleanup() {
+    this.disable();
   }
 }
 

@@ -30,7 +30,7 @@ const defaultSignal: SignalData = {
   confidence: 85,
 };
 
-const SignalPanel = ({ signal = defaultSignal }: SignalPanelProps) => {
+export function SignalPanel({ signal = defaultSignal }: SignalPanelProps) {
   const getSignalColor = (type: string) => {
     switch (type) {
       case "buy":
@@ -108,6 +108,4 @@ const SignalPanel = ({ signal = defaultSignal }: SignalPanelProps) => {
       </div>
     </Card>
   );
-};
-
-export default SignalPanel;
+}

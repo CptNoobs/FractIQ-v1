@@ -1,24 +1,32 @@
-export interface WavePattern {
-  type: "impulse" | "corrective";
-  startIndex: number;
-  endIndex: number;
-  subWaves: WavePattern[];
+export interface WavePoint {
+  price: number;
+  time: number;
+  waveNumber: number;
+  subWave: string;
   confidence: number;
-  direction: "up" | "down";
 }
 
-export interface WaveAnalysis {
+export interface WavePattern {
+  points: WavePoint[];
   currentWave: number;
   subWave: string;
-  pattern: WavePattern;
   confidence: number;
+  direction: "up" | "down";
+  pattern: string;
   targets: Array<{
     price: number;
     probability: number;
     timeframe: string;
   }>;
-  nextWaveScenarios: Array<{
-    pattern: WavePattern;
-    probability: number;
-  }>;
+}
+
+export interface WaveRule {
+  name: string;
+  validate: (points: WavePoint[]) => boolean;
+  description: string;
+}
+
+export interface WaveDetector {
+  detectWavePattern(symbol: string, timeframe?: string): Promise<WavePattern>;
+  cleanup(): void;
 }

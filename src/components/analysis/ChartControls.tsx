@@ -15,15 +15,18 @@ import {
   Maximize2,
   Target,
   Waves,
+  Brain,
 } from "lucide-react";
 
 interface ChartControlsProps {
   chartType: "candlestick" | "line" | "area";
   showVolume: boolean;
   showGrid: boolean;
+  showAI: boolean;
   onChartTypeChange: (type: "candlestick" | "line" | "area") => void;
   onToggleVolume: () => void;
   onToggleGrid: () => void;
+  onToggleAI: () => void;
   onSave: () => void;
   onShare: () => void;
   onMaximize: () => void;
@@ -33,9 +36,11 @@ export function ChartControls({
   chartType,
   showVolume,
   showGrid,
+  showAI,
   onChartTypeChange,
   onToggleVolume,
   onToggleGrid,
+  onToggleAI,
   onSave,
   onShare,
   onMaximize,
@@ -50,7 +55,7 @@ export function ChartControls({
               <Button
                 variant={chartType === "candlestick" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={() => onChartTypeChange("candlestick")}
               >
                 <CandlestickChart className="h-4 w-4" />
@@ -64,7 +69,7 @@ export function ChartControls({
               <Button
                 variant={chartType === "line" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={() => onChartTypeChange("line")}
               >
                 <LineChart className="h-4 w-4" />
@@ -78,7 +83,7 @@ export function ChartControls({
               <Button
                 variant={chartType === "area" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={() => onChartTypeChange("area")}
               >
                 <BarChart2 className="h-4 w-4" />
@@ -95,7 +100,7 @@ export function ChartControls({
               <Button
                 variant={showVolume ? "secondary" : "ghost"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={onToggleVolume}
               >
                 <BarChart2 className="h-4 w-4" />
@@ -106,16 +111,26 @@ export function ChartControls({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <Target className="h-4 w-4" />
+              <Button
+                variant={showAI ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
+                onClick={onToggleAI}
+              >
+                <Brain className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add Indicator</TooltipContent>
+            <TooltipContent>AI Analysis</TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <Button
+                variant={showGrid ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
+                onClick={onToggleGrid}
+              >
                 <Waves className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -130,7 +145,7 @@ export function ChartControls({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={onSave}
               >
                 <Save className="h-4 w-4" />
@@ -144,7 +159,7 @@ export function ChartControls({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={onShare}
               >
                 <Share2 className="h-4 w-4" />
@@ -158,7 +173,7 @@ export function ChartControls({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:bg-muted/50 transition-colors"
                 onClick={onMaximize}
               >
                 <Maximize2 className="h-4 w-4" />

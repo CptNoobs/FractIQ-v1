@@ -1,13 +1,16 @@
-import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface LoadingProps {
-  className?: string;
-}
-
-export const Loading = ({ className = "" }: LoadingProps) => {
+export function Loading({ className }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <div
+      className={cn(
+        "animate-spin rounded-full border-2 border-current border-t-transparent",
+        className,
+      )}
+      role="status"
+      aria-label="loading"
+    >
+      <span className="sr-only">Loading...</span>
     </div>
   );
-};
+}

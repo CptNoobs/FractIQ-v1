@@ -43,7 +43,7 @@ export function AuthForm() {
       title: "Guest Access",
       description: "Continuing as guest user",
     });
-    navigate("/dashboard");
+    navigate("/main");
   };
 
   return (

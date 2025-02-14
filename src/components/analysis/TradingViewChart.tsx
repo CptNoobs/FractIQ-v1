@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
-export function TradingViewChart({ symbol = "BTCUSDT", theme = "dark" }) {
+import { memo } from "react";
+
+function TradingViewChartComponent({ symbol = "BTCUSDT", theme = "dark" }) {
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,3 +48,5 @@ export function TradingViewChart({ symbol = "BTCUSDT", theme = "dark" }) {
     <div id="tradingview_widget" ref={container} className="w-full h-full" />
   );
 }
+
+export const TradingViewChart = memo(TradingViewChartComponent);

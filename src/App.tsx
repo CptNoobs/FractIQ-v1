@@ -1,95 +1,122 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useRoutes } from "react-router-dom";
+import { Routes, Route, Navigate, useRoutes } from "react-router-dom";
+import { Settings } from "lucide-react";
+import { memo } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Nav } from "@/components/ui/nav";
 import routes from "tempo-routes";
-import Home from "./components/home";
-import Landing from "./components/landing";
 import Main from "./components/main";
 import Analysis from "./components/analysis";
 import Learn from "./components/learn";
 import Insights from "./components/insights";
-import Settings from "./components/settings";
+import SettingsPage from "./components/settings";
 import { AuthForm } from "./components/auth/AuthForm";
+import { TokenPage } from "./components/token/TokenPage";
 import { Toaster } from "@/components/ui/toaster";
+import { AIJournal } from "./components/journal/AIJournal";
+import Landing from "./components/landing";
+import { PrivateRoute } from "./components/PrivateRoute";
 
 import { AppProvider } from "@/contexts/AppContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { TokenProvider } from "@/contexts/TokenContext";
 
-function Layout({ children }: { children: React.ReactNode }) {
+const AppContent = () => {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed top-0 left-0 right-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="flex h-14 items-center px-4 gap-4">
-          <a href="/main" className="font-bold text-xl">
-            Elliott Wave AI
-          </a>
-          <nav className="flex-1 flex items-center justify-end gap-2">
-            <a href="/main" className="px-4 py-2 hover:bg-accent rounded-md">
-              Home
-            </a>
-            <a
-              href="/dashboard"
-              className="px-4 py-2 hover:bg-accent rounded-md"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/analysis"
-              className="px-4 py-2 hover:bg-accent rounded-md"
-            >
-              Analysis
-            </a>
-            <a
-              href="/insights"
-              className="px-4 py-2 hover:bg-accent rounded-md"
-            >
-              Insights
-            </a>
-            <a href="/learn" className="px-4 py-2 hover:bg-accent rounded-md">
-              Learn
-            </a>
-            <a
-              href="/settings"
-              className="px-4 py-2 hover:bg-accent rounded-md"
-            >
-              Settings
-            </a>
-          </nav>
-        </div>
-      </header>
-      <main className="pt-14">{children}</main>
+      {user && (
+        <header className="fixed top-0 left-0 right-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+          <div className="flex h-14 items-center px-4">
+            <Nav />
+          </div>
+        </header>
+      )}
+
+      <main className={user ? "pt-14" : ""}>
+        <Toaster />
+        {import.meta.env.VITE_TEMPO && useRoutes(routes)}
+
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<AuthForm />} />
+          <Route path="/tokens" element={<TokenPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Main />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={
+              <PrivateRoute>
+                <Analysis />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/learn"
+            element={
+              <PrivateRoute>
+                <Learn />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/insights"
+            element={
+              <PrivateRoute>
+                <Insights />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <SettingsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/journal"
+            element={
+              <PrivateRoute>
+                <AIJournal />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tokens"
+            element={
+              <PrivateRoute>
+                <TokenPage />
+              </PrivateRoute>
+            }
+          />
+
+          {import.meta.env.VITE_TEMPO && <Route path="/tempobook/*" />}
+        </Routes>
+      </main>
     </div>
   );
-}
+};
 
-function App() {
+const App = memo(() => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
       <AuthProvider>
-        <AppProvider>
-          <Layout>
-            <Toaster />
-            {/* Tempo routes */}
-            {import.meta.env.VITE_TEMPO && useRoutes(routes)}
-
-            <Routes>
-              <Route path="/" element={<Navigate to="/main" replace />} />
-              <Route path="/auth" element={<AuthForm />} />
-              <Route path="/main" element={<Main />} />
-              <Route path="/dashboard" element={<Home />} />
-              <Route path="/analysis" element={<Analysis />} />
-              <Route path="/learn" element={<Learn />} />
-              <Route path="/insights" element={<Insights />} />
-              <Route path="/settings" element={<Settings />} />
-
-              {/* Add this before any catchall route */}
-              {import.meta.env.VITE_TEMPO && <Route path="/tempobook/*" />}
-            </Routes>
-          </Layout>
-        </AppProvider>
+        <TokenProvider>
+          <AppProvider>
+            <AppContent />
+          </AppProvider>
+        </TokenProvider>
       </AuthProvider>
     </ThemeProvider>
   );
-}
+});
 
 export default App;

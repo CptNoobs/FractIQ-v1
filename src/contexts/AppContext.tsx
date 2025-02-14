@@ -95,7 +95,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
+const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   useEffect(() => {
@@ -186,6 +186,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AppContext.Provider>
   );
-}
+};
 
+export { AppProvider };
 export const useApp = () => useContext(AppContext);

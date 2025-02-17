@@ -1,121 +1,111 @@
-import { Routes, Route, Navigate, useRoutes } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { memo } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Nav } from "@/components/ui/nav";
+import { useRoutes } from "react-router-dom";
 import routes from "tempo-routes";
-import Main from "./components/main";
-import Analysis from "./components/analysis";
-import Learn from "./components/learn";
-import Insights from "./components/insights";
-import SettingsPage from "./components/settings";
-import { AuthForm } from "./components/auth/AuthForm";
-import { TokenPage } from "./components/token/TokenPage";
-import { Toaster } from "@/components/ui/toaster";
-import { AIJournal } from "./components/journal/AIJournal";
-import Landing from "./components/landing";
-import { PrivateRoute } from "./components/PrivateRoute";
+import { MainLayout } from "@/layouts/MainLayout";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { ModernDashboard } from "@/components/dashboard/ModernDashboard";
+import Analysis from "@/components/analysis";
+import Learn from "@/components/learn";
+import Insights from "@/components/insights";
+import SettingsPage from "@/components/settings";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { TokenPage } from "@/components/token/TokenPage";
+import { Tokenomics } from "@/components/token/Tokenomics";
+import { PricingPage } from "@/components/premium/PricingPage";
+import Journal from "@/components/journal";
+import Landing from "@/components/landing";
+import { PrivateRoute } from "@/components/PrivateRoute";
+import { PublicRoute } from "@/components/PublicRoute";
+import Patterns from "@/components/patterns";
+import { TradingTools } from "@/components/trading/TradingTools";
+import { MarketScanner } from "@/components/market/MarketScanner";
+import { NewsPanel } from "@/components/trading/NewsPanel";
+import { SocialTrading } from "@/components/trading/SocialTrading";
+import { BacktestingModule } from "@/components/trading/BacktestingModule";
+import { AIJournal } from "@/components/journal/AIJournal";
 
 import { AppProvider } from "@/contexts/AppContext";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { TokenProvider } from "@/contexts/TokenContext";
 
-const AppContent = () => {
-  const { user } = useAuth();
+import { ErrorBoundary } from "@/lib/error-boundary";
 
+const TempoRoutes = () => {
+  const tempoRoutes = useRoutes(routes);
+  return tempoRoutes;
+};
+
+const AppRoutes = () => {
   return (
-    <div className="min-h-screen bg-background">
-      {user && (
-        <header className="fixed top-0 left-0 right-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-          <div className="flex h-14 items-center px-4">
-            <Nav />
-          </div>
-        </header>
-      )}
+    <>
+      {import.meta.env.VITE_TEMPO && <TempoRoutes />}
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <Landing />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/auth"
+            element={
+              <PublicRoute>
+                <AuthForm />
+              </PublicRoute>
+            }
+          />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/tokenomics" element={<Tokenomics />} />
 
-      <main className={user ? "pt-14" : ""}>
-        <Toaster />
-        {import.meta.env.VITE_TEMPO && useRoutes(routes)}
-
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<AuthForm />} />
-          <Route path="/tokens" element={<TokenPage />} />
           <Route
             path="/dashboard"
             element={
               <PrivateRoute>
-                <Main />
+                <DashboardLayout />
               </PrivateRoute>
             }
-          />
-          <Route
-            path="/analysis"
-            element={
-              <PrivateRoute>
-                <Analysis />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/learn"
-            element={
-              <PrivateRoute>
-                <Learn />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/insights"
-            element={
-              <PrivateRoute>
-                <Insights />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute>
-                <SettingsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/journal"
-            element={
-              <PrivateRoute>
-                <AIJournal />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/tokens"
-            element={
-              <PrivateRoute>
-                <TokenPage />
-              </PrivateRoute>
-            }
-          />
+          >
+            <Route index element={<ModernDashboard />} />
+            <Route path="analysis" element={<Analysis />} />
+            <Route path="patterns" element={<Patterns />} />
+            <Route path="learn" element={<Learn />} />
+            <Route path="insights" element={<Insights />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="journal" element={<AIJournal />} />
+            <Route path="tokens" element={<TokenPage />} />
+            <Route path="trading" element={<TradingTools />} />
+            <Route path="scanner" element={<MarketScanner />} />
+            <Route path="news" element={<NewsPanel />} />
+            <Route path="social" element={<SocialTrading />} />
+            <Route path="backtest" element={<BacktestingModule />} />
+          </Route>
 
           {import.meta.env.VITE_TEMPO && <Route path="/tempobook/*" />}
-        </Routes>
-      </main>
-    </div>
+          <Route path="*" element={<Navigate to="/" />} />
+        </Route>
+      </Routes>
+    </>
   );
 };
 
 const App = memo(() => {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
-      <AuthProvider>
-        <TokenProvider>
-          <AppProvider>
-            <AppContent />
-          </AppProvider>
-        </TokenProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
+        <AuthProvider>
+          <TokenProvider>
+            <AppProvider>
+              <AppRoutes />
+            </AppProvider>
+          </TokenProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 });
 

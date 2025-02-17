@@ -1,82 +1,52 @@
-type MessageHandler = (data: any) => void;
-
-export class WebSocketService {
+class WebSocketManager {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectTimeout = 1000;
-  private messageHandlers: Map<string, Set<MessageHandler>> = new Map();
-
-  constructor(private url: string) {}
+  private subscribers: Map<string, Set<(data: any) => void>> = new Map();
+  private reconnectTimeout: number | null = null;
 
   connect() {
-    this.ws = new WebSocket(this.url);
-
-    this.ws.onopen = () => {
-      console.log("WebSocket connected");
-      this.reconnectAttempts = 0;
-    };
-
-    this.ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        this.handleMessage(message);
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-
-    this.ws.onclose = () => {
-      console.log("WebSocket disconnected");
-      this.attemptReconnect();
-    };
-
-    this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-  }
-
-  private attemptReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => {
-        console.log(`Attempting to reconnect (${this.reconnectAttempts})...`);
-        this.connect();
-      }, this.reconnectTimeout * this.reconnectAttempts);
+    try {
+      // For development, we'll mock the WebSocket
+      // In production, replace with your actual WebSocket endpoint
+      console.log("Mocking WebSocket connection for development");
+      this.mockWebSocket();
+    } catch (error) {
+      console.error("WebSocket connection error:", error);
     }
   }
 
-  subscribe(channel: string, handler: MessageHandler) {
-    if (!this.messageHandlers.has(channel)) {
-      this.messageHandlers.set(channel, new Set());
-    }
-    this.messageHandlers.get(channel)?.add(handler);
+  private mockWebSocket() {
+    // Simulate WebSocket behavior for development
+    this.ws = {
+      readyState: WebSocket.OPEN,
+      send: (data: string) => {
+        console.log("Mock WebSocket send:", data);
+      },
+      close: () => {
+        console.log("Mock WebSocket closed");
+        this.ws = null;
+      },
+    } as WebSocket;
 
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "subscribe", channel }));
-    }
+    // Simulate periodic market data updates
+    setInterval(() => {
+      this.mockMarketDataUpdate();
+    }, 1000);
   }
 
-  unsubscribe(channel: string, handler: MessageHandler) {
-    this.messageHandlers.get(channel)?.delete(handler);
-    if (this.messageHandlers.get(channel)?.size === 0) {
-      this.messageHandlers.delete(channel);
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: "unsubscribe", channel }));
-      }
-    }
-  }
+  private mockMarketDataUpdate() {
+    const mockData = {
+      type: "market_data",
+      symbol: "BTCUSDT",
+      price: 45000 + Math.random() * 1000,
+      time: new Date().toISOString(),
+      volume: 1000000 + Math.random() * 500000,
+    };
 
-  private handleMessage(message: { type: string; data: any }) {
-    const handlers = this.messageHandlers.get(message.type);
-    if (handlers) {
-      handlers.forEach((handler) => {
-        try {
-          handler(message.data);
-        } catch (error) {
-          console.error("Error in message handler:", error);
-        }
-      });
+    const subscribers = this.subscribers.get("market_data");
+    if (subscribers) {
+      subscribers.forEach((callback) => callback(mockData));
     }
   }
 
@@ -85,10 +55,31 @@ export class WebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.subscribers.clear();
+    this.reconnectAttempts = 0;
+  }
+
+  subscribe(type: string, callback: (data: any) => void) {
+    if (!this.subscribers.has(type)) {
+      this.subscribers.set(type, new Set());
+    }
+    this.subscribers.get(type)?.add(callback);
+  }
+
+  unsubscribe(type: string, callback: (data: any) => void) {
+    this.subscribers.get(type)?.delete(callback);
+  }
+
+  send(data: any) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    }
   }
 }
 
-// Create singleton instance
-export const wsService = new WebSocketService(
-  import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws",
-);
+export const wsManager = new WebSocketManager();
+export const wsService = wsManager; // Add backward compatibility export

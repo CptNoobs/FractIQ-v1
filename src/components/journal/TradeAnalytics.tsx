@@ -21,10 +21,14 @@ import {
 } from "lucide-react";
 import type { JournalStats } from "@/types/journal";
 
-import { Loading } from "@/components/ui/loading";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export function TradeAnalytics() {
   const { stats, getStats, loading, error } = useJournal();
+  const [timeframe, setTimeframe] = useState("30d");
+  const [dateRange, setDateRange] = useState<
+    { from: Date; to: Date } | undefined
+  >();
 
   if (error) {
     return (
@@ -37,14 +41,10 @@ export function TradeAnalytics() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loading className="h-8 w-8" />
+        <LoadingSpinner />
       </div>
     );
   }
-  const [timeframe, setTimeframe] = useState("30d");
-  const [dateRange, setDateRange] = useState<
-    { from: Date; to: Date } | undefined
-  >();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

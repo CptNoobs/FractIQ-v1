@@ -1,16 +1,21 @@
-import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
-export function Loading({ className }: { className?: string }) {
+export function LoadingSpinner({ className = "" }: { className?: string }) {
+  return <Loader2 className={`animate-spin ${className}`} />;
+}
+
+export function LoadingPage() {
   return (
-    <div
-      className={cn(
-        "animate-spin rounded-full border-2 border-current border-t-transparent",
-        className,
-      )}
-      role="status"
-      aria-label="loading"
-    >
-      <span className="sr-only">Loading...</span>
+    <div className="flex h-[50vh] items-center justify-center">
+      <LoadingSpinner className="h-8 w-8 text-primary" />
+    </div>
+  );
+}
+
+export function LoadingOverlay() {
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <LoadingSpinner className="h-8 w-8 text-primary" />
     </div>
   );
 }

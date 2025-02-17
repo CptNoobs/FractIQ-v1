@@ -38,12 +38,20 @@ export function AuthForm() {
     }
   };
 
-  const handleGuestAccess = () => {
-    toast({
-      title: "Guest Access",
-      description: "Continuing as guest user",
-    });
-    navigate("/main");
+  const handleGuestAccess = async () => {
+    try {
+      await signIn("guest@example.com", "guestpassword");
+      toast({
+        title: "Guest Access",
+        description: "Continuing as guest user",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Guest access is currently unavailable",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

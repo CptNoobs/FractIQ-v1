@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { api } from "@/lib/api-client";
-import { wsService } from "@/lib/websocket";
+import { wsManager as wsService } from "@/lib/websocket";
 import { marketData } from "@/lib/market-data";
 import type { Signal, MarketData, UserSettings } from "@/types/api";
 
@@ -114,7 +114,9 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
     marketData.enable();
 
     return () => {
-      wsService.disconnect();
+      if (wsService && typeof wsService.disconnect === "function") {
+        wsService.disconnect();
+      }
       marketData.disable();
     };
   }, []);

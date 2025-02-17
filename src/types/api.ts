@@ -1,59 +1,21 @@
-export interface MarketData {
-  symbol: string;
-  timestamp: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
 export interface Signal {
   id: string;
   symbol: string;
-  type: "buy" | "sell";
+  type: "buy" | "sell" | "hold";
   confidence: number;
-  timestamp: number;
   price: number;
-  pattern: string;
-  wave: number;
-  subWave: string;
+  timestamp: string;
+  aiReason?: string;
 }
 
-export interface RiskParameters {
-  stopLoss: number;
-  takeProfit: number;
-  positionSize: number;
-  riskRewardRatio: number;
-  maxLoss: number;
-}
-
-export interface PatternAnalysis {
-  pattern: string;
-  confidence: number;
-  wave: number;
-  subWave: string;
-  direction: "up" | "down";
-  targets: {
-    entry: number;
-    stopLoss: number;
-    takeProfit: number;
-  };
-}
-
-export interface AIInsight {
+export interface MarketData {
   symbol: string;
-  sentiment: number;
-  trendStrength: number;
-  support: number;
-  resistance: number;
-  patterns: PatternAnalysis[];
-  prediction: {
-    direction: "up" | "down";
-    probability: number;
-    targetPrice: number;
-    timeframe: string;
-  };
+  price: number;
+  volume: number;
+  change24h: number;
+  high24h: number;
+  low24h: number;
+  timestamp: number;
 }
 
 export interface UserSettings {
@@ -75,14 +37,10 @@ export interface UserSettings {
   };
   security: {
     twoFactorEnabled: boolean;
-    apiKeys: Array<{
-      name: string;
-      key: string;
-      permissions: string[];
-    }>;
+    apiKeys: string[];
   };
   appearance: {
-    theme: "light" | "dark" | "matrix" | "system";
+    theme: "light" | "dark" | "system" | "matrix";
     chartStyle: "candlestick" | "line" | "area";
   };
 }

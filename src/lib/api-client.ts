@@ -1,66 +1,64 @@
 import axios from "axios";
+import type { Signal, MarketData, UserSettings } from "@/types/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://api.tempolabs.ai";
 
-export const apiClient = axios.create({
-  baseURL: API_URL,
+const api = axios.create({
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Add auth interceptor
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Handle token refresh or logout
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  },
-);
-
-export const api = {
+// API endpoints
+export const apiClient = {
   // Auth
-  login: (credentials: { email: string; password: string }) =>
-    apiClient.post("/auth/login", credentials),
-  register: (userData: { email: string; password: string; name: string }) =>
-    apiClient.post("/auth/register", userData),
-  refreshToken: () => apiClient.post("/auth/refresh"),
+  signIn: (email: string, password: string) =>
+    api.post("/auth/signin", { email, password }),
+  signUp: (email: string, password: string, name: string) =>
+    api.post("/auth/signup", { email, password, name }),
+  resetPassword: (email: string) => api.post("/auth/reset-password", { email }),
 
   // Market Data
   getMarketData: (symbol: string, timeframe: string) =>
-    apiClient.get(`/market-data/${symbol}/${timeframe}`),
-  getWatchlist: () => apiClient.get("/watchlist"),
-  addToWatchlist: (symbol: string) => apiClient.post("/watchlist", { symbol }),
-  removeFromWatchlist: (symbol: string) =>
-    apiClient.delete(`/watchlist/${symbol}`),
-
-  // Trading
-  getSignals: () => apiClient.get("/signals"),
-  executeSignal: (signalId: string) =>
-    apiClient.post(`/signals/${signalId}/execute`),
-  getRiskParameters: (signalId: string) =>
-    apiClient.get(`/signals/${signalId}/risk`),
-
-  // Analysis
-  analyzePattern: (symbol: string, timeframe: string) =>
-    apiClient.post("/analysis/pattern", { symbol, timeframe }),
-  getAIInsights: (symbol: string) =>
-    apiClient.get(`/analysis/insights/${symbol}`),
+    api.get<MarketData[]>(`/market-data/${symbol}?timeframe=${timeframe}`),
+  getSignals: () => api.get<Signal[]>("/signals"),
 
   // User Settings
-  updateSettings: (settings: any) => apiClient.put("/settings", settings),
-  getSettings: () => apiClient.get("/settings"),
+  getUserSettings: () => api.get<UserSettings>("/settings"),
+  updateUserSettings: (settings: Partial<UserSettings>) =>
+    api.patch("/settings", settings),
+
+  // Trading
+  executeTrade: (symbol: string, type: "buy" | "sell", amount: number) =>
+    api.post("/trades/execute", { symbol, type, amount }),
+  getTrades: () => api.get("/trades"),
+
+  // AI Analysis
+  getPatternAnalysis: (symbol: string) =>
+    api.get(`/analysis/pattern/${symbol}`),
+  getTechnicalAnalysis: (symbol: string) =>
+    api.get(`/analysis/technical/${symbol}`),
+  getAIInsights: (symbol: string) => api.get(`/analysis/insights/${symbol}`),
+
+  // Journal
+  getJournalEntries: () => api.get("/journal/entries"),
+  addJournalEntry: (entry: any) => api.post("/journal/entries", entry),
+
+  // Token
+  getTokenBalance: () => api.get("/token/balance"),
+  stakeTokens: (amount: number, duration: number) =>
+    api.post("/token/stake", { amount, duration }),
+  unstakeTokens: (amount: number) => api.post("/token/unstake", { amount }),
 };
+
+export { api };
